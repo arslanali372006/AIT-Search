@@ -1,88 +1,45 @@
+# src/parser.py
+
 import json
 import os
-from typing import Dict, Generator, Tuple
+from typing import List, Dict
 
-class DocumentParser:
-    """
-    Reads CORD-19 JSON FILES and extracts:
-        - paperID
-        - title
-        - abstract text
-        - body text
-        - back matter
+class Document:
+    """Represents a single document."""
+    def __init__(self, paper_id: str, title: str, abstract: str, body_text: str):
+        self.paper_id = paper_id
+        self.title = title
+        self.abstract = abstract
+        self.body_text = body_text
 
-    Returns clean text for indexing.
-    """
+class Parser:
+    """Parses JSON documents from a folder."""
+    def __init__(self, folder_path: str = "search_engine/sample_data/sample_json"):
+        self.folder_path = folder_path
+        self.documents: List[Document] = []
 
-    def __init__(self, json_root: str):
-        self.json_root = json_root
+    def parse(self) -> List[Document]:
+        """Parse all JSON files in the folder."""
+        files = [f for f in os.listdir(self.folder_path) if f.endswith(".json")]
+        for file_name in files:
+            path = os.path.join(self.folder_path, file_name)
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                doc = Document(
+                    paper_id=data.get("paper_id", ""),
+                    title=data.get("title", ""),
+                    abstract=data.get("abstract", ""),
+                    body_text=data.get("body_text", "")
+                )
+                self.documents.append(doc)
+        return self.documents
 
-    def iter_documents(self) -> Generator[Tuple[str, str], None, None]:
-        """
-        Iterates through all the JSON files inside:
-            json_root/pdf_json/
-            json_root/pmc_json/
-
-        Yields:
-            (doc_id, full_text)
-        """
-
-        folders = ["pdf_json", "pmc_json"]
-
-        for folder in folders:
-            folder_path = os.path.join(self.json_root, folder)
-
-            # FIX 1: Correct directory existence check
-            if not os.path.isdir(folder_path):
-                continue
-
-            # FIX 2: Correct iteration through files
-            for filename in os.listdir(folder_path):
-                if not filename.endswith(".json"):
-                    continue
-
-                fpath = os.path.join(folder_path, filename)
-
-                try:
-                    with open(fpath, "r") as f:
-                        data = json.load(f)
-                except Exception:
-                    # skip unreadable/corrupt json
-                    continue
-
-                # FIX 3: safer filename fallback
-                doc_id = data.get("paper_id", filename.replace(".json", ""))
-
-                text = self.extract_text(data)
-
-                if text.strip():
-                    yield (doc_id, text)
-
-    def extract_text(self, data: Dict) -> str:
-        """Extract the title, abstract, body text, and back matter."""
-
-        parts = []
-
-        # Title
-        title = data.get("metadata", {}).get("title", "")
-        parts.append(title)
-
-        # Abstract
-        for item in data.get("abstract", []):
-            t = item.get("text", "")
-            if t:
-                parts.append(t)
-
-        # Body Text
-        for item in data.get("body_text", []):
-            t = item.get("text", "")
-            if t:
-                parts.append(t)
-
-        # Back Matter
-        for item in data.get("back_matter", []):
-            t = item.get("text", "")
-            if t:
-                parts.append(t)
-
-        return "\n".join(parts)
+if __name__ == "__main__":
+    parser = Parser()
+    docs = parser.parse()
+    for doc in docs:
+        print(f"Doc ID: {doc.paper_id}")
+        print(f"Title: {doc.title}")
+        print(f"Abstract: {doc.abstract}")
+        print(f"Body: {doc.body_text[:100]}...")  # show first 100 chars
+        print("="*50)
