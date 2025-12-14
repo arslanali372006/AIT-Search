@@ -2,6 +2,7 @@
 from barrels import barrel_manager
 from lexicon import lexicon
 from autocomplete import get_autocomplete_suggestions
+from semantic import semantic_search
 
 def single_word_search(word):
     """Return list of (docID, score) tuples for a single word."""
@@ -53,17 +54,15 @@ def multi_word_search(query):
     return sorted(results.items(), key=lambda x: x[1], reverse=True)
 
 
-def semantic_search(query):
-    """
-    Placeholder for semantic search.
-    Currently uses single-word search on each token.
-    """
-    words = query.lower().split()
-    results = {}
-    for word in words:
-        for doc_id, score in single_word_search(word):
-            results[doc_id] = results.get(doc_id, 0) + score
-    return sorted(results.items(), key=lambda x: x[1], reverse=True)
+def semantic_search_query(query):
+    results = semantic_search(query)
+    if not results:
+        print("No semantic results.")
+        return
+
+    print("\nSemantic Results:")
+    for doc_id, score in results:
+        print(f"{doc_id}  (score={score:.4f})")
 
 
 def autocomplete_words(prefix, top_n=10):
