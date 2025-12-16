@@ -2,52 +2,44 @@
 
 import os
 import json
-from tokenizer_module import Tokenizer  # Make sure tokenizer_module.py is in the same folder
+from tokenizer_module import Tokenizer
 
-# Folder where your sample JSON files are
 DATA_DIR = "search_engine/sample_data/sample_json/"
-
-# Output folder for tokenized results
 OUTPUT_DIR = "search_engine/sample_data/tokenized/"
 
-# Initialize tokenizer (remove_stopwords=True if you want)
 tokenizer = Tokenizer(remove_stopwords=True)
-
-# Make sure output directory exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Process each JSON file
+
+def extract_text(field):
+    if isinstance(field, str):
+        return field
+    if isinstance(field, list):
+        return " ".join(
+            item["text"] for item in field
+            if isinstance(item, dict) and "text" in item
+        )
+    return ""
+
+
 for filename in os.listdir(DATA_DIR):
-    if filename.endswith(".json"):
-        filepath = os.path.join(DATA_DIR, filename)
+    if not filename.endswith(".json"):
+        continue
 
-        # Read JSON content
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = json.load(f)
+    filepath = os.path.join(DATA_DIR, filename)
+    with open(filepath, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-        # Combine all string fields into one text
-        text_parts = []
-        for value in data.values():
-            if isinstance(value, str):
-                text_parts.append(value)
-            elif isinstance(value, list):
-                # If list contains strings, join them
-                text_parts.extend([str(v) for v in value if isinstance(v, str)])
-            elif isinstance(value, dict):
-                # Flatten dict values recursively if needed
-                text_parts.extend([str(v) for v in value.values() if isinstance(v, str)])
-        text = " ".join(text_parts)
+    text = " ".join([
+        extract_text(data.get("title", "")),
+        extract_text(data.get("abstract", [])),
+        extract_text(data.get("body_text", []))
+    ])
 
-        # Tokenize
-        tokens = tokenizer.tokenize(text)
+    tokens = tokenizer.tokenize(text)
 
-        # Print tokens
-        print(f"\nTokens for {filename}:")
-        print(tokens)
+    output_path = os.path.join(OUTPUT_DIR, filename)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump({"tokens": tokens}, f, indent=2)
 
-        # Save tokenized output
-        output_path = os.path.join(OUTPUT_DIR, filename)
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump({"tokens": tokens}, f, indent=2)
-
-        print(f"Processed {filename}: {len(tokens)} tokens")
+    print(f"Processed {filename}: {len(tokens)} tokens")
