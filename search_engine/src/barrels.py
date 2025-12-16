@@ -12,7 +12,7 @@ class Barrel:
     - New barrels: wordID → {docID: [pos1, pos2, ...], ...}
     """
 
-    def __init__(self, barrel_dir: str = None, barrel_size: int = 100000):
+    def __init__(self, barrel_dir: str = None, barrel_size: int = 10000):
         if barrel_dir is None:
             barrel_dir = os.path.join(os.path.dirname(__file__), "..", "index", "barrels")
         self.barrel_dir = barrel_dir
