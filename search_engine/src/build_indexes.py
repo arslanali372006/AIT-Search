@@ -6,7 +6,7 @@ from lexicon import Lexicon
 from forward_index import ForwardIndex
 from inverted_index import InvertedIndex
 
-TOKENIZED_DIR = "search_engine/sample_data/tokenized/"
+TOKENIZED_DIR = "search_engine/index/tokenized/"
 
 # 1. Load tokenized documents
 tokenized_docs = {}

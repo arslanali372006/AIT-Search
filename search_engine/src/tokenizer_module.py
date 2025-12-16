@@ -27,7 +27,7 @@ class Tokenizer:
         } if remove_stopwords else set()
 
         # Match words containing letters, digits, and hyphens
-        self.token_pattern = re.compile(r"[a-z0-9\-]+")
+        self.token_pattern = re.compile(r"[a-z0-9]+")
 
     def _is_gibberish(self, token: str) -> bool:
         """
@@ -41,6 +41,9 @@ class Tokenizer:
         # Reject pure numbers
         if token.isdigit():
             return True
+        
+        if re.search(r"(.)\1{3,}", token):
+            return True
 
         # Reject repeated-character garbage (e.g., aaaaaaaa, bbbbb)
         if len(set(token)) <= 2 and len(token) > 5:
@@ -48,13 +51,7 @@ class Tokenizer:
 
         return False
 
-    def _normalize(self, token: str) -> str:
-        """
-        Normalize token while preserving semantic identity.
-        """
-        # Remove hyphens but keep meaning: covid-19 -> covid19
-        token = token.replace("-", "")
-        return token
+    
 
     def tokenize(self, text: str) -> List[str]:
         """
@@ -70,7 +67,6 @@ class Tokenizer:
 
         tokens: List[str] = []
         for token in raw_tokens:
-            token = self._normalize(token)
 
             if token in self.stopwords:
                 continue
