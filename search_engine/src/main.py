@@ -1,7 +1,15 @@
 # src/main.py
 from search import single_word_search, multi_word_search, semantic_search, autocomplete_words
+from semantic import load_all_embeddings, load_glove
+
 
 def main():
+
+    print("Loading all embeddings into memory (this may take a while)...")
+    embeddings = load_all_embeddings()
+
+    glove = load_glove()
+
     while True:
         print("\n==== Search Engine CLI ====")
         print("1. Single-word Search")
@@ -40,7 +48,7 @@ def main():
 
         elif choice == "4":
             query = input("Enter semantic search query: ").strip().lower()
-            results = semantic_search(query)
+            results = semantic_search(query, glove=glove, embeddings=embeddings, top_k=10)
             if not results:
                 print("No results found.")
             else:
