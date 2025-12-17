@@ -55,7 +55,7 @@ def multi_word_search(query):
 
 
 def semantic_search(query, glove, embeddings, top_k):
-    results = semantic_search_query(query, glove, embeddings, top_k)
+    results = semantic_search_query(query, top_k=top_k, glove=glove, preloaded_embeddings=embeddings)
     if not results:
         print("No semantic results.")
         return
