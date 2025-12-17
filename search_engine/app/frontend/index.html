@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIT Search Engine</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 AIT Search Engine</h1>
+            <p class="subtitle">Powered by FastAPI & Semantic Search</p>
+        </header>
+
+        <div class="stats-bar" id="statsBar">
+            <div class="stat">
+                <span class="stat-label">Documents:</span>
+                <span class="stat-value" id="docCount">-</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Words:</span>
+                <span class="stat-value" id="wordCount">-</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Status:</span>
+                <span class="stat-value status-indicator" id="status">Connecting...</span>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <div class="search-type-tabs">
+                <button class="tab active" data-type="semantic">Semantic Search</button>
+                <button class="tab" data-type="multi">Multi-word</button>
+                <button class="tab" data-type="single">Single-word</button>
+                <button class="tab" data-type="autocomplete">Autocomplete</button>
+            </div>
+
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Enter your search query..."
+                    autocomplete="off"
+                >
+                <button id="searchButton">Search</button>
+            </div>
+
+            <div class="autocomplete-suggestions" id="autocompleteSuggestions"></div>
+
+            <div class="options">
+                <label>
+                    Results:
+                    <select id="topK">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Searching...</p>
+            </div>
+
+            <div class="results-header" id="resultsHeader" style="display: none;">
+                <h2>Results <span id="resultCount">(0)</span></h2>
+                <p class="search-time">Search took <span id="searchTime">0</span>ms</p>
+            </div>
+
+            <div class="results" id="results"></div>
+
+            <div class="no-results" id="noResults" style="display: none;">
+                <p>No results found. Try a different query.</p>
+            </div>
+
+            <div class="error-message" id="errorMessage" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
