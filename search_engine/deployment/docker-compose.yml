@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  search-engine:
+    build:
+      context: ../..
+      dockerfile: search_engine/deployment/dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ../../search_engine:/app/search_engine
+    restart: unless-stopped

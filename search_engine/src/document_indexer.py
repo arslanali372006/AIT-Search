@@ -24,8 +24,8 @@ class DocumentIndexer:
         self.tokenizer = Tokenizer(remove_stopwords=True)
         self.base_dir = os.path.dirname(__file__)
         self.data_dir = os.path.join(self.base_dir, "..", "sample_data")
-        self.tokenized_dir = os.path.join(self.base_dir, "..", "index", "tokenized")
-        self.embeddings_dir = os.path.join(self.base_dir, "..", "index", "embeddings")
+        self.tokenized_dir = os.path.join(self.base_dir, "..", "data", "tokenized")
+        self.embeddings_dir = os.path.join(self.base_dir, "..", "data", "embeddings")
         
         # Ensure directories exist
         os.makedirs(self.data_dir, exist_ok=True)
