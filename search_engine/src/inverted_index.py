@@ -18,7 +18,7 @@ class InvertedIndex:
                     self.index[wid] = []
                 self.index[wid].append(doc_id)
 
-    def save(self, path: str = "search_engine/index/inverted_index.json") -> None:
+    def save(self, path: str = "search_engine/data/inverted_index.json") -> None:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.index, f, indent=2)

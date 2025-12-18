@@ -4,8 +4,8 @@ import os
 import json
 from tokenizer_module import Tokenizer
 
-DATA_DIR = "search_engine/sample_data/"
-OUTPUT_DIR = "search_engine/index/tokenized/"
+DATA_DIR = "search_engine/data/document_parses/pdf_json"
+OUTPUT_DIR = "search_engine/data/tokenized/"
 
 tokenizer = Tokenizer(remove_stopwords=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)

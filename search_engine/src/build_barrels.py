@@ -4,9 +4,9 @@ import json
 import os
 from barrels import Barrel
 
-INVERTED_INDEX_PATH = "search_engine/index/inverted_index.json"
+INVERTED_INDEX_PATH = "search_engine/data/inverted_index.json"
 
-barrel = Barrel(barrel_dir="search_engine/index/barrels", barrel_size=10000)
+barrel = Barrel(barrel_dir="search_engine/data/barrels", barrel_size=100000)
 
 # Load inverted index
 with open(INVERTED_INDEX_PATH, "r", encoding="utf-8") as f:
