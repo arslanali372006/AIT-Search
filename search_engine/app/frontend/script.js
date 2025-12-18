@@ -116,6 +116,29 @@ function setupEventListeners() {
             document.querySelector('.tab[data-type="semantic"]').click();
         });
     }
+    
+    // Close modal
+    const closeModal = document.getElementById('closeModal');
+    if (closeModal) {
+        closeModal.addEventListener('click', closeDocumentModal);
+    }
+    
+    // Close modal when clicking outside
+    const modal = document.getElementById('documentModal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeDocumentModal();
+            }
+        });
+    }
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeDocumentModal();
+        }
+    });
 }
 
 // Update placeholder based on search type
@@ -341,6 +364,8 @@ async function fetchDocumentDetails(docId) {
         const response = await fetch(`${API_BASE_URL}/document/${docId}`);
         const data = await response.json();
         
+        console.log('Document data:', data); // Debug log
+        
         const resultElement = document.getElementById(`result-${docId}`);
         if (resultElement) {
             const loadingDiv = resultElement.querySelector('.result-loading');
@@ -348,14 +373,26 @@ async function fetchDocumentDetails(docId) {
                 loadingDiv.remove();
             }
             
+            // Safely extract title and abstract with fallbacks
+            const title = data.title || data.metadata?.title || 'No title available';
+            const abstract = data.abstract || 'No abstract available';
+            
             const detailsHTML = `
                 <div class="result-details">
-                    <h3 class="result-title">${data.title}</h3>
-                    <p class="result-abstract">${data.abstract}</p>
+                    <h3 class="result-title">${title}</h3>
+                    <p class="result-abstract">${abstract}</p>
                 </div>
             `;
             
             resultElement.insertAdjacentHTML('beforeend', detailsHTML);
+            
+            // Add click event to open document in new tab
+            resultElement.addEventListener('click', (e) => {
+                console.log('Opening document:', docId);
+                window.open(`document.html?id=${docId}`, '_blank');
+            });
+            resultElement.style.cursor = 'pointer';
+            resultElement.classList.add('clickable');
         }
     } catch (error) {
         console.error(`Failed to fetch details for ${docId}:`, error);
@@ -367,6 +404,67 @@ async function fetchDocumentDetails(docId) {
             }
         }
     }
+}
+
+// Open Document Modal
+async function openDocumentModal(docId) {
+    console.log('Opening modal for docId:', docId);
+    const modal = document.getElementById('documentModal');
+    const modalBody = document.getElementById('modalBody');
+    
+    console.log('Modal element:', modal);
+    console.log('Modal body element:', modalBody);
+    
+    // Show modal with loading state
+    modal.classList.add('show');
+    modalBody.innerHTML = '<div class="modal-loading">Loading document...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/document/${docId}`);
+        const data = await response.json();
+        
+        const title = data.title || 'Untitled Document';
+        const abstract = data.abstract || 'No abstract available';
+        const paperId = data.paper_id || docId;
+        
+        modalBody.innerHTML = `
+            <div class="modal-header">
+                <h2 class="modal-title">${title}</h2>
+                <div class="modal-meta">
+                    <div class="modal-meta-item">
+                        <span>📄</span>
+                        <span>Paper ID: ${paperId}</span>
+                    </div>
+                    <div class="modal-meta-item">
+                        <span>🔍</span>
+                        <span>Doc ID: ${docId.substring(0, 16)}...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-section">
+                <h3 class="modal-section-title">📝 Abstract</h3>
+                <div class="modal-section-content">${abstract}</div>
+            </div>
+        `;
+    } catch (error) {
+        modalBody.innerHTML = `
+            <div class="modal-section">
+                <h3 class="modal-section-title" style="color: var(--red);">
+                    ❌ Error Loading Document
+                </h3>
+                <div class="modal-section-content">
+                    Failed to load document details. Please try again.
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Close Modal
+function closeDocumentModal() {
+    const modal = document.getElementById('documentModal');
+    modal.classList.remove('show');
 }
 
 // Show Loading
@@ -606,3 +704,47 @@ function extractText(field) {
     }
     return '';
 }
+
+// Close Modal
+function closeDocumentModal() {
+    console.log('Closing modal');
+    const modal = document.getElementById('documentModal');
+    modal.classList.remove('show');
+}
+
+// Initialize modal event listeners when page loads
+window.addEventListener('load', () => {
+    console.log('Initializing modal event listeners');
+    
+    // Close modal
+    const closeModal = document.getElementById('closeModal');
+    if (closeModal) {
+        console.log('Close button found');
+        closeModal.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeDocumentModal();
+        });
+    } else {
+        console.error('Close modal button not found');
+    }
+    
+    // Close modal when clicking outside
+    const modal = document.getElementById('documentModal');
+    if (modal) {
+        console.log('Modal element found');
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeDocumentModal();
+            }
+        });
+    } else {
+        console.error('Modal element not found');
+    }
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeDocumentModal();
+        }
+    });
+});

@@ -16,7 +16,7 @@ from typing import List, Optional
 from datetime import datetime
 from search import single_word_search, multi_word_search, autocomplete_words  # type: ignore
 from semantic import semantic_search_query  # type: ignore
-from loader import search_engine
+from .loader import search_engine
 
 router = APIRouter()
 
@@ -104,30 +104,60 @@ async def multi_word_search_endpoint(request: SearchRequest):
 @router.post("/search/semantic", response_model=List[SearchResponse])
 async def semantic_search_endpoint(request: SearchRequest):
     """
-    Semantic search: Returns documents with similar meaning using GloVe embeddings.
+    Hybrid semantic search: Fast keyword filter + semantic reranking.
+    Filters to top 500 candidates first, then does semantic search.
     """
     try:
+        import numpy as np
+        from sklearn.metrics.pairwise import cosine_similarity
+        
         query = request.query.strip().lower()
         if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
-        # Get preloaded data
-        glove = search_engine.get_glove()
-        embeddings = search_engine.get_embeddings()
+        # Step 1: Use multi-word search to get top 500 candidates (fast)
+        keyword_results = multi_word_search(query)
         
-        results = semantic_search_query(
-            query,
-            top_k=request.top_k,
-            glove=glove,
-            preloaded_embeddings=embeddings
-        )
-        
-        if not results:
+        if not keyword_results:
+            # No keyword matches, return empty
             return []
         
+        # Extract just the doc_ids from keyword results (limit to 500)
+        candidate_docs = [doc_id for doc_id, _ in keyword_results[:500]]
+        
+        # Step 2: Semantic reranking on candidates only
+        glove = search_engine.get_glove()
+        
+        # Compute query embedding
+        query_tokens = query.split()
+        query_vectors = [glove[token] for token in query_tokens if token in glove]
+        
+        if not query_vectors:
+            # Fall back to keyword results if no embeddings available
+            return [
+                SearchResponse(doc_id=doc_id, score=float(score))
+                for doc_id, score in keyword_results[:request.top_k]
+            ]
+        
+        query_embedding = np.mean(query_vectors, axis=0)
+        
+        # Compute similarities only for candidate documents
+        similarities = []
+        for doc_id in candidate_docs:
+            doc_embedding = search_engine.get_embedding(doc_id)
+            if doc_embedding is not None:
+                similarity = cosine_similarity(
+                    query_embedding.reshape(1, -1),
+                    doc_embedding.reshape(1, -1)
+                )[0][0]
+                similarities.append((doc_id, float(similarity)))
+        
+        # Sort by semantic similarity and return top K
+        similarities.sort(key=lambda x: x[1], reverse=True)
+        
         return [
-            SearchResponse(doc_id=doc_id, score=float(score))
-            for doc_id, score in results
+            SearchResponse(doc_id=doc_id, score=score)
+            for doc_id, score in similarities[:request.top_k]
         ]
     
     except Exception as e:
@@ -182,9 +212,14 @@ async def get_document(doc_id: str):
     from pathlib import Path
     
     try:
-        # Try to find the document in sample_data
-        base_dir = Path(__file__).parent.parent.parent / "sample_data"
+        # Try to find the document in data/document_parses/pdf_json first (for paper hash IDs)
+        base_dir = Path(__file__).parent.parent.parent / "data" / "document_parses" / "pdf_json"
         doc_file = base_dir / f"{doc_id}.json"
+        
+        # Fallback to sample_data if not found (for doc_X format)
+        if not doc_file.exists():
+            base_dir = Path(__file__).parent.parent.parent / "sample_data"
+            doc_file = base_dir / f"{doc_id}.json"
         
         if not doc_file.exists():
             raise HTTPException(status_code=404, detail=f"Document {doc_id} not found")
@@ -207,6 +242,15 @@ async def get_document(doc_id: str):
             "paper_id": data.get("paper_id", doc_id),
             "title": title,
             "abstract": abstract[:500] if abstract else "No abstract available"  # Limit to 500 chars
+        }
+    
+    except FileNotFoundError:
+        # Document file doesn't exist - return minimal info
+        return {
+            "doc_id": doc_id,
+            "paper_id": doc_id,
+            "title": f"Document {doc_id[:16]}...",
+            "abstract": "Document indexed but full content not available. Only document ID is stored in the search index."
         }
     
     except FileNotFoundError:

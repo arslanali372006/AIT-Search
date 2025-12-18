@@ -67,10 +67,21 @@ def start_backend():
     print_colored("   URL: http://localhost:8000", Colors.BLUE)
     print_colored("   Docs: http://localhost:8000/docs\n", Colors.BLUE)
     
-    # Start uvicorn
+    # Find virtual environment Python
+    search_engine_dir = backend_dir.parent.parent
+    venv_python = search_engine_dir.parent / "venv" / "bin" / "python"
+    
+    if venv_python.exists():
+        python_exe = str(venv_python)
+        print_colored(f"   Using venv: {python_exe}\n", Colors.BLUE)
+    else:
+        python_exe = sys.executable
+        print_colored(f"   Warning: venv not found, using: {python_exe}\n", Colors.YELLOW)
+    
+    # Start uvicorn with output redirected to console
     backend_process = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"],
-        cwd=backend_dir,
+        [python_exe, "-m", "uvicorn", "app.backend.server:app", "--host", "0.0.0.0", "--port", "8000"],
+        cwd=search_engine_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
@@ -107,19 +118,21 @@ def wait_for_backend():
     import urllib.error
     
     print_colored("⏳ Waiting for backend to initialize...", Colors.YELLOW)
+    print_colored("   (Lazy-loading: should be ready in ~10 seconds)", Colors.YELLOW)
     
-    max_attempts = 60  # 60 seconds
+    max_attempts = 60  # 1 minute should be enough with lazy loading
     for i in range(max_attempts):
         try:
-            urllib.request.urlopen("http://localhost:8000/api/", timeout=1)
+            urllib.request.urlopen("http://localhost:8000/api/stats", timeout=2)
             print_colored("✅ Backend is ready!\n", Colors.GREEN)
             return True
         except (urllib.error.URLError, ConnectionRefusedError, TimeoutError):
             time.sleep(1)
-            if i % 5 == 0:
+            if i % 5 == 0 and i > 0:
                 print_colored(f"   Still waiting... ({i}s)", Colors.YELLOW)
     
     print_colored("❌ Backend failed to start within 60 seconds", Colors.RED)
+    print_colored("   Check terminal output above for errors", Colors.RED)
     return False
 
 def print_stream(process, prefix, color):
@@ -180,6 +193,12 @@ def main():
             # Check if processes are still running
             if backend_proc.poll() is not None:
                 print_colored("❌ Backend server stopped unexpectedly!", Colors.RED)
+                # Try to get error output
+                if backend_proc.stdout:
+                    remaining_output = backend_proc.stdout.read()
+                    if remaining_output:
+                        print_colored("\n📋 Backend Error Output:", Colors.RED)
+                        print(remaining_output)
                 cleanup()
                 break
             

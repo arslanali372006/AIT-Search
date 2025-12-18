@@ -6,8 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from api import router
-from loader import search_engine
+from .api import router
+from .loader import search_engine
 
 # Create FastAPI app
 app = FastAPI(

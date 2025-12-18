@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Viewer - AIT Search Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ocean-deep: #0a1628;
+            --ocean-dark: #0f1f3a;
+            --ocean-mid: #162844;
+            --blue-glow: #1e3a8a;
+            --cyan-bright: #00fff5;
+            --teal-accent: #14b8a6;
+            --purple-glow: #a855f7;
+            --pink-accent: #ec4899;
+            --text-primary: #e0e7ff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-subtle: rgba(148, 163, 184, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, var(--ocean-deep) 0%, var(--ocean-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--ocean-dark);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--cyan-bright);
+            text-decoration: none;
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+            transition: transform 0.2s ease;
+        }
+
+        .back-button:hover {
+            transform: translateX(-5px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--cyan-bright);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .document-header {
+            border-bottom: 2px solid var(--border-subtle);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .document-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.3;
+            margin-bottom: 20px;
+        }
+
+        .document-meta {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .meta-label {
+            color: var(--cyan-bright);
+            font-weight: 600;
+        }
+
+        .document-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--cyan-bright);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-content {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: 1.05rem;
+            text-align: justify;
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .error-title {
+            font-size: 1.8rem;
+            color: var(--pink-accent);
+            margin-bottom: 15px;
+        }
+
+        .error-text {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(22, 44, 74, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--blue-glow), var(--cyan-bright));
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--cyan-bright), var(--teal-accent));
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="javascript:history.back()" class="back-button">
+            ← Back to Search
+        </a>
+
+        <div id="content">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading document...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+
+        // Get document ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const docId = urlParams.get('id');
+
+        if (!docId) {
+            displayError('No document ID provided');
+        } else {
+            loadDocument(docId);
+        }
+
+        async function loadDocument(docId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/document/${docId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Document not found');
+                }
+
+                const data = await response.json();
+                displayDocument(data, docId);
+            } catch (error) {
+                console.error('Error loading document:', error);
+                displayError('Failed to load document. Please try again.');
+            }
+        }
+
+        function displayDocument(data, docId) {
+            const title = data.title || 'Untitled Document';
+            const abstract = data.abstract || 'No abstract available';
+            const paperId = data.paper_id || docId;
+
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="document-header">
+                    <h1 class="document-title">${escapeHtml(title)}</h1>
+                    <div class="document-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Paper ID:</span>
+                            <span>${escapeHtml(paperId)}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Document ID:</span>
+                            <span>${escapeHtml(docId.substring(0, 16))}...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="document-section">
+                    <h2 class="section-title">📝 Abstract</h2>
+                    <div class="section-content">${escapeHtml(abstract)}</div>
+                </div>
+            `;
+
+            // Update page title
+            document.title = title + ' - AIT Search Engine';
+        }
+
+        function displayError(message) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="error-message">
+                    <div class="error-title">❌ Error</div>
+                    <p class="error-text">${escapeHtml(message)}</p>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
