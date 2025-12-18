@@ -34,6 +34,7 @@
                 <button class="tab" data-type="multi">Multi-word</button>
                 <button class="tab" data-type="single">Single-word</button>
                 <button class="tab" data-type="autocomplete">Autocomplete</button>
+                <button class="tab add-doc-tab" data-type="add-document">➕ Add Document</button>
             </div>
 
             <div class="search-box">
@@ -79,6 +80,87 @@
             </div>
 
             <div class="error-message" id="errorMessage" style="display: none;"></div>
+        </div>
+
+        <!-- Add Document Section -->
+        <div class="add-document-section" id="addDocumentSection" style="display: none;">
+            <h2>📄 Add New Document</h2>
+            
+            <!-- Upload Method Toggle -->
+            <div class="upload-toggle">
+                <button type="button" class="toggle-btn active" data-method="form">📝 Manual Entry</button>
+                <button type="button" class="toggle-btn" data-method="file">📁 Upload File</button>
+            </div>
+
+            <!-- Manual Form Entry -->
+            <form id="addDocumentForm" style="display: block;">
+                <div class="form-group">
+                    <label for="docTitle">Document Title *</label>
+                    <input 
+                        type="text" 
+                        id="docTitle" 
+                        placeholder="Enter document title" 
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="docAbstract">Abstract *</label>
+                    <textarea 
+                        id="docAbstract" 
+                        rows="5" 
+                        placeholder="Enter document abstract" 
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="docBody">Body Text (Optional)</label>
+                    <textarea 
+                        id="docBody" 
+                        rows="10" 
+                        placeholder="Enter document body text"
+                    ></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Add Document</button>
+                    <button type="button" class="btn-secondary" id="cancelAddDoc">Cancel</button>
+                </div>
+            </form>
+
+            <!-- File Upload -->
+            <div id="fileUploadSection" style="display: none;">
+                <div class="file-upload-container">
+                    <div class="file-upload-info">
+                        <p><strong>Supported formats:</strong></p>
+                        <ul>
+                            <li><strong>JSON:</strong> Must contain title, abstract, and optional body_text</li>
+                            <li><strong>TXT:</strong> Plain text file (will be used as body text, filename as title)</li>
+                        </ul>
+                    </div>
+
+                    <div class="file-input-wrapper">
+                        <input 
+                            type="file" 
+                            id="fileInput" 
+                            accept=".json,.txt"
+                            style="display: none;"
+                        >
+                        <button type="button" class="file-select-btn" onclick="document.getElementById('fileInput').click()">
+                            Choose File
+                        </button>
+                        <span id="fileName" class="file-name">No file selected</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-primary" id="uploadFileBtn" disabled>Upload & Index</button>
+                        <button type="button" class="btn-secondary" id="cancelFileUpload">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="add-doc-result" id="addDocResult" style="display: none;"></div>
         </div>
     </div>
 

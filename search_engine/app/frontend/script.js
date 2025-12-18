@@ -16,6 +16,9 @@ const noResults = document.getElementById('noResults');
 const errorMessage = document.getElementById('errorMessage');
 const autocompleteSuggestions = document.getElementById('autocompleteSuggestions');
 const tabs = document.querySelectorAll('.tab');
+const addDocumentSection = document.getElementById('addDocumentSection');
+const addDocumentForm = document.getElementById('addDocumentForm');
+const cancelAddDocBtn = document.getElementById('cancelAddDoc');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -32,8 +35,14 @@ function setupEventListeners() {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
             currentSearchType = tab.dataset.type;
-            updatePlaceholder();
-            clearResults();
+            
+            if (currentSearchType === 'add-document') {
+                showAddDocumentSection();
+            } else {
+                hideAddDocumentSection();
+                updatePlaceholder();
+                clearResults();
+            }
         });
     });
 
@@ -56,6 +65,57 @@ function setupEventListeners() {
             autocompleteSuggestions.classList.remove('show');
         }
     });
+
+    // Add document form
+    if (addDocumentForm) {
+        addDocumentForm.addEventListener('submit', handleAddDocument);
+    }
+
+    // Cancel add document
+    if (cancelAddDocBtn) {
+        cancelAddDocBtn.addEventListener('click', () => {
+            // Switch back to semantic search tab
+            document.querySelector('.tab[data-type="semantic"]').click();
+        });
+    }
+
+    // Upload method toggle
+    const toggleBtns = document.querySelectorAll('.toggle-btn');
+    toggleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            toggleBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const method = btn.dataset.method;
+            if (method === 'form') {
+                document.getElementById('addDocumentForm').style.display = 'block';
+                document.getElementById('fileUploadSection').style.display = 'none';
+            } else {
+                document.getElementById('addDocumentForm').style.display = 'none';
+                document.getElementById('fileUploadSection').style.display = 'block';
+            }
+        });
+    });
+
+    // File input change
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileSelect);
+    }
+
+    // Upload file button
+    const uploadFileBtn = document.getElementById('uploadFileBtn');
+    if (uploadFileBtn) {
+        uploadFileBtn.addEventListener('click', handleFileUpload);
+    }
+
+    // Cancel file upload
+    const cancelFileUpload = document.getElementById('cancelFileUpload');
+    if (cancelFileUpload) {
+        cancelFileUpload.addEventListener('click', () => {
+            document.querySelector('.tab[data-type="semantic"]').click();
+        });
+    }
 }
 
 // Update placeholder based on search type
@@ -339,4 +399,210 @@ function clearResults() {
     noResults.style.display = 'none';
     errorMessage.style.display = 'none';
     autocompleteSuggestions.classList.remove('show');
+}
+
+// Show Add Document Section
+function showAddDocumentSection() {
+    // Hide search section
+    document.querySelector('.search-section').style.display = 'none';
+    document.querySelector('.results-section').style.display = 'none';
+    
+    // Show add document section
+    addDocumentSection.style.display = 'block';
+    
+    // Clear form
+    addDocumentForm.reset();
+    document.getElementById('addDocResult').style.display = 'none';
+}
+
+// Hide Add Document Section
+function hideAddDocumentSection() {
+    // Show search section
+    document.querySelector('.search-section').style.display = 'block';
+    document.querySelector('.results-section').style.display = 'block';
+    
+    // Hide add document section
+    addDocumentSection.style.display = 'none';
+}
+
+// Handle Add Document
+async function handleAddDocument(e) {
+    e.preventDefault();
+    
+    const title = document.getElementById('docTitle').value.trim();
+    const abstract = document.getElementById('docAbstract').value.trim();
+    const body = document.getElementById('docBody').value.trim();
+    
+    if (!title || !abstract) {
+        showAddDocError('Title and Abstract are required');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = addDocumentForm.querySelector('.btn-primary');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Adding Document...';
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/document/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: title,
+                abstract: abstract,
+                body_text: body
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAddDocSuccess(data);
+            addDocumentForm.reset();
+        } else {
+            showAddDocError(data.detail || 'Failed to add document');
+        }
+    } catch (error) {
+        showAddDocError(`Error: ${error.message}`);
+    } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// Show Add Document Success
+function showAddDocSuccess(data) {
+    const resultDiv = document.getElementById('addDocResult');
+    resultDiv.className = 'add-doc-result';
+    resultDiv.style.display = 'block';
+    
+    resultDiv.innerHTML = `
+        <h3>✅ Document Added Successfully!</h3>
+        <p><strong>Document ID:</strong> ${data.doc_id}</p>
+        <p><strong>Tokens:</strong> ${data.details.tokens_count} (${data.details.unique_words} unique)</p>
+        <p><strong>Indexing Time:</strong> ${data.details.indexing_time}</p>
+        <p><strong>Embedding:</strong> ${data.details.embedding_created ? 'Created' : 'Not created'}</p>
+        <p style="margin-top: 15px; font-style: italic;">Your document is now searchable!</p>
+    `;
+    
+    // Scroll to result
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Show Add Document Error
+function showAddDocError(message) {
+    const resultDiv = document.getElementById('addDocResult');
+    resultDiv.className = 'add-doc-result error';
+    resultDiv.style.display = 'block';
+    
+    resultDiv.innerHTML = `
+        <h3>❌ Error Adding Document</h3>
+        <p>${message}</p>
+    `;
+    
+    // Scroll to result
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Handle File Select
+function handleFileSelect(e) {
+    const file = e.target.files[0];
+    const fileName = document.getElementById('fileName');
+    const uploadBtn = document.getElementById('uploadFileBtn');
+    
+    if (file) {
+        fileName.textContent = file.name;
+        fileName.classList.add('selected');
+        uploadBtn.disabled = false;
+    } else {
+        fileName.textContent = 'No file selected';
+        fileName.classList.remove('selected');
+        uploadBtn.disabled = true;
+    }
+}
+
+// Handle File Upload
+async function handleFileUpload() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showAddDocError('Please select a file');
+        return;
+    }
+
+    const uploadBtn = document.getElementById('uploadFileBtn');
+    const originalText = uploadBtn.textContent;
+    uploadBtn.textContent = 'Processing...';
+    uploadBtn.disabled = true;
+
+    try {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        let docData;
+
+        if (fileExt === 'json') {
+            // Parse JSON file
+            const text = await file.text();
+            const jsonData = JSON.parse(text);
+            
+            // Extract title, abstract, body
+            docData = {
+                title: jsonData.metadata?.title || jsonData.title || file.name,
+                abstract: extractText(jsonData.abstract),
+                body_text: extractText(jsonData.body_text)
+            };
+        } else if (fileExt === 'txt') {
+            // For TXT files, use filename as title and content as body
+            const text = await file.text();
+            docData = {
+                title: file.name.replace('.txt', ''),
+                abstract: text.substring(0, 500), // First 500 chars as abstract
+                body_text: text
+            };
+        } else {
+            throw new Error('Unsupported file type. Please use JSON or TXT files.');
+        }
+
+        // Send to API
+        const response = await fetch(`${API_BASE_URL}/document/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(docData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showAddDocSuccess(data);
+            fileInput.value = '';
+            document.getElementById('fileName').textContent = 'No file selected';
+            document.getElementById('fileName').classList.remove('selected');
+        } else {
+            showAddDocError(data.detail || 'Failed to add document');
+        }
+    } catch (error) {
+        showAddDocError(`Error: ${error.message}`);
+    } finally {
+        uploadBtn.textContent = originalText;
+        uploadBtn.disabled = false;
+    }
+}
+
+// Extract text helper for file upload
+function extractText(field) {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    if (Array.isArray(field)) {
+        return field.map(item => {
+            if (typeof item === 'string') return item;
+            if (item && item.text) return item.text;
+            return '';
+        }).join(' ');
+    }
+    return '';
 }

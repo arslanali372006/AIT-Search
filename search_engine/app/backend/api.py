@@ -13,6 +13,7 @@ if src_path not in sys.path:
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
 from search import single_word_search, multi_word_search, autocomplete_words  # type: ignore
 from semantic import semantic_search_query  # type: ignore
 from loader import search_engine
@@ -154,16 +155,16 @@ async def autocomplete_endpoint(request: AutocompleteRequest):
 @router.get("/stats")
 async def get_stats():
     """
-    Get search engine statistics.
+    Get search engine statistics (real-time counts).
     """
     try:
         lexicon = search_engine.get_lexicon()
-        embeddings = search_engine.get_embeddings()
+        total_docs = search_engine.get_total_documents()
         glove = search_engine.get_glove()
         
         return {
             "total_words": lexicon.size(),
-            "total_documents": len(embeddings),
+            "total_documents": total_docs,
             "glove_vectors": len(glove),
             "status": "operational"
         }
@@ -212,3 +213,66 @@ async def get_document(doc_id: str):
         raise HTTPException(status_code=404, detail=f"Document {doc_id} not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching document: {str(e)}")
+
+
+class AddDocumentRequest(BaseModel):
+    paper_id: Optional[str] = None
+    title: str
+    abstract: str
+    body_text: Optional[str] = ""
+
+
+@router.post("/document/add")
+async def add_document(request: AddDocumentRequest):
+    """
+    Add a new document to the search engine.
+    Automatically indexes the document and makes it searchable.
+    """
+    from document_indexer import document_indexer
+    import numpy as np
+    from pathlib import Path
+    
+    try:
+        # Create document in expected format
+        doc_data = {
+            "paper_id": request.paper_id or f"user_added_{int(datetime.now().timestamp())}",
+            "metadata": {
+                "title": request.title
+            },
+            "abstract": [{"text": request.abstract}] if request.abstract else [],
+            "body_text": [{"text": request.body_text}] if request.body_text else []
+        }
+        
+        # Index the document
+        glove = search_engine.get_glove()
+        result = document_indexer.index_document(doc_data, glove_embeddings=glove)
+        
+        if result["success"]:
+            # CRITICAL: Load the new embedding into memory immediately
+            if result["embedding_created"]:
+                doc_id = result["doc_id"]
+                embeddings_dir = Path(__file__).parent.parent.parent / "index" / "embeddings"
+                embedding_path = embeddings_dir / f"{doc_id}.npy"
+                
+                if embedding_path.exists():
+                    new_embedding = np.load(str(embedding_path))
+                    # Add to in-memory embeddings
+                    search_engine.embeddings[doc_id] = new_embedding
+                    print(f"✅ Added {doc_id} to in-memory embeddings")
+            
+            return {
+                "status": "success",
+                "doc_id": result["doc_id"],
+                "message": result["message"],
+                "details": {
+                    "tokens_count": result["tokens_count"],
+                    "unique_words": result["unique_words"],
+                    "indexing_time": f"{result['indexing_time']:.2f}s",
+                    "embedding_created": result["embedding_created"]
+                }
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result["message"])
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding document: {str(e)}")

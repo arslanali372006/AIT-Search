@@ -65,6 +65,10 @@ class SearchEngineLoader:
     
     def get_barrel_manager(self):
         return self.barrel_manager
+    
+    def get_total_documents(self):
+        """Get current total document count including newly added ones"""
+        return len(self.embeddings)
 
 
 # Global instance
