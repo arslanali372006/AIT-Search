@@ -124,6 +124,7 @@ def semantic_search_query(query, top_k=10, glove=None, preloaded_embeddings=None
     query_tokens = query.lower().split()
     query_vec = average_embedding(query_tokens, glove)
     if query_vec is None:
+        print("No valid embeddings found for the query.")
         return []
 
     results = []

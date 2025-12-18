@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIT Search Engine</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 AIT Search Engine</h1>
+            <p class="subtitle">Powered by FastAPI & Semantic Search</p>
+        </header>
+
+        <div class="stats-bar" id="statsBar">
+            <div class="stat">
+                <span class="stat-label">Documents:</span>
+                <span class="stat-value" id="docCount">-</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Words:</span>
+                <span class="stat-value" id="wordCount">-</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Status:</span>
+                <span class="stat-value status-indicator" id="status">Connecting...</span>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <div class="search-type-tabs">
+                <button class="tab active" data-type="semantic">Semantic Search</button>
+                <button class="tab" data-type="multi">Multi-word</button>
+                <button class="tab" data-type="single">Single-word</button>
+                <button class="tab" data-type="autocomplete">Autocomplete</button>
+                <button class="tab add-doc-tab" data-type="add-document">➕ Add Document</button>
+            </div>
+
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Enter your search query..."
+                    autocomplete="off"
+                >
+                <button id="searchButton">Search</button>
+            </div>
+
+            <div class="autocomplete-suggestions" id="autocompleteSuggestions"></div>
+
+            <div class="options">
+                <label>
+                    Results:
+                    <select id="topK">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Searching...</p>
+            </div>
+
+            <div class="results-header" id="resultsHeader" style="display: none;">
+                <h2>Results <span id="resultCount">(0)</span></h2>
+                <p class="search-time">Search took <span id="searchTime">0</span>ms</p>
+            </div>
+
+            <div class="results" id="results"></div>
+
+            <div class="no-results" id="noResults" style="display: none;">
+                <p>No results found. Try a different query.</p>
+            </div>
+
+            <div class="error-message" id="errorMessage" style="display: none;"></div>
+        </div>
+
+        <!-- Add Document Section -->
+        <div class="add-document-section" id="addDocumentSection" style="display: none;">
+            <h2>📄 Add New Document</h2>
+            
+            <!-- Upload Method Toggle -->
+            <div class="upload-toggle">
+                <button type="button" class="toggle-btn active" data-method="form">📝 Manual Entry</button>
+                <button type="button" class="toggle-btn" data-method="file">📁 Upload File</button>
+            </div>
+
+            <!-- Manual Form Entry -->
+            <form id="addDocumentForm" style="display: block;">
+                <div class="form-group">
+                    <label for="docTitle">Document Title *</label>
+                    <input 
+                        type="text" 
+                        id="docTitle" 
+                        placeholder="Enter document title" 
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="docAbstract">Abstract *</label>
+                    <textarea 
+                        id="docAbstract" 
+                        rows="5" 
+                        placeholder="Enter document abstract" 
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="docBody">Body Text (Optional)</label>
+                    <textarea 
+                        id="docBody" 
+                        rows="10" 
+                        placeholder="Enter document body text"
+                    ></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Add Document</button>
+                    <button type="button" class="btn-secondary" id="cancelAddDoc">Cancel</button>
+                </div>
+            </form>
+
+            <!-- File Upload -->
+            <div id="fileUploadSection" style="display: none;">
+                <div class="file-upload-container">
+                    <div class="file-upload-info">
+                        <p><strong>Supported formats:</strong></p>
+                        <ul>
+                            <li><strong>JSON:</strong> Must contain title, abstract, and optional body_text</li>
+                            <li><strong>TXT:</strong> Plain text file (will be used as body text, filename as title)</li>
+                        </ul>
+                    </div>
+
+                    <div class="file-input-wrapper">
+                        <input 
+                            type="file" 
+                            id="fileInput" 
+                            accept=".json,.txt"
+                            style="display: none;"
+                        >
+                        <button type="button" class="file-select-btn" onclick="document.getElementById('fileInput').click()">
+                            Choose File
+                        </button>
+                        <span id="fileName" class="file-name">No file selected</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-primary" id="uploadFileBtn" disabled>Upload & Index</button>
+                        <button type="button" class="btn-secondary" id="cancelFileUpload">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="add-doc-result" id="addDocResult" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
