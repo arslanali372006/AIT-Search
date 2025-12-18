@@ -6,9 +6,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-TOKENIZED_DIR = os.path.join(BASE_DIR, "index", "tokenized")
-EMBEDDINGS_DIR = os.path.join(BASE_DIR, "index", "embeddings")
-GLOVE_PATH = os.path.join(BASE_DIR, "index", "glove", "glove.6B.100d.txt")  # Downloaded separately
+TOKENIZED_DIR = os.path.join(BASE_DIR, "data", "tokenized")
+EMBEDDINGS_DIR = os.path.join(BASE_DIR, "data", "embeddings")
+GLOVE_PATH = os.path.join(BASE_DIR, "data", "glove", "glove.6B.100d.txt")  # Downloaded separately
 EMBEDDING_DIM = 100
 
 os.makedirs(EMBEDDINGS_DIR, exist_ok=True)

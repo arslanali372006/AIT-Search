@@ -49,7 +49,7 @@ class Lexicon:
 
     def load(self, path: str = None) -> None:
         if path is None:
-            path = os.path.join(os.path.dirname(__file__), "..", "index", "lexicon.json")
+            path = os.path.join(os.path.dirname(__file__), "..", "data", "lexicon.json")
         path = os.path.abspath(path)
         if not os.path.exists(path):
             print(f"Lexicon file not found at {path}. Starting empty lexicon.")
