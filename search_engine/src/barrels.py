@@ -31,15 +31,36 @@ class Barrel:
         path = self.get_barrel_path(barrel_id)
         if not os.path.exists(path):
             return {}
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        # Convert keys to int for safe lookup
-        return {int(k): v for k, v in data.items()}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            # Convert keys to int for safe lookup
+            return {int(k): v for k, v in data.items()}
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"⚠️  Warning: Barrel {barrel_id} corrupted ({str(e)[:100]}). Creating backup and starting fresh.")
+            # Backup corrupted file
+            backup_path = path + ".corrupted.backup"
+            if os.path.exists(path):
+                import shutil
+                shutil.copy2(path, backup_path)
+            return {}
 
     def save_barrel(self, barrel_id: int, data: Dict[int, Union[List[str], Dict[str, List[int]]]]) -> None:
         path = self.get_barrel_path(barrel_id)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+        try:
+            # Write to temporary file first, then rename (atomic operation)
+            temp_path = path + ".tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            # Atomic rename
+            os.replace(temp_path, path)
+        except Exception as e:
+            print(f"⚠️  Error saving barrel {barrel_id}: {str(e)}")
+            # Clean up temp file if it exists
+            temp_path = path + ".tmp"
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise
 
     def add_docID(self, word_id: int, doc_id: str, position: int = None) -> None:
         """

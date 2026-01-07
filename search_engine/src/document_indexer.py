@@ -128,29 +128,36 @@ class DocumentIndexer:
             word_positions[token].append(position)
         
         # Update barrels
+        failed_updates = 0
         for token, positions in word_positions.items():
             word_id = word_ids.get(token)
             if word_id:
-                # Get barrel for this word
-                barrel_id = barrel_manager.get_barrel_id(word_id)
-                barrel_data = barrel_manager.load_barrel(barrel_id)
-                
-                # Check if word exists and convert old format to new if needed
-                if word_id not in barrel_data:
-                    # New word - use dict format
-                    barrel_data[word_id] = {}
-                elif isinstance(barrel_data[word_id], list):
-                    # Old format (list of doc IDs) - convert to dict format
-                    old_docs = barrel_data[word_id]
-                    barrel_data[word_id] = {doc: [] for doc in old_docs}
-                
-                # Add document with positions
-                barrel_data[word_id][doc_id] = positions
-                
-                # Save barrel
-                barrel_manager.save_barrel(barrel_id, barrel_data)
+                try:
+                    # Get barrel for this word
+                    barrel_id = barrel_manager.get_barrel_id(word_id)
+                    barrel_data = barrel_manager.load_barrel(barrel_id)
+                    
+                    # Check if word exists and convert old format to new if needed
+                    if word_id not in barrel_data:
+                        # New word - use dict format
+                        barrel_data[word_id] = {}
+                    elif isinstance(barrel_data[word_id], list):
+                        # Old format (list of doc IDs) - convert to dict format
+                        old_docs = barrel_data[word_id]
+                        barrel_data[word_id] = {doc: [] for doc in old_docs}
+                    
+                    # Add document with positions
+                    barrel_data[word_id][doc_id] = positions
+                    
+                    # Save barrel
+                    barrel_manager.save_barrel(barrel_id, barrel_data)
+                except Exception as e:
+                    print(f"⚠️  Failed to update barrel for word '{token}': {str(e)[:100]}")
+                    failed_updates += 1
         
-        print(f"Updated barrels with {len(word_positions)} unique words")
+        if failed_updates > 0:
+            print(f"⚠️  {failed_updates} barrel updates failed, but document was added")
+        print(f"Updated barrels with {len(word_positions) - failed_updates}/{len(word_positions)} unique words")
     
     def generate_embedding(self, doc_id: str, tokens: List[str], glove_embeddings) -> bool:
         """Generate and save document embedding."""

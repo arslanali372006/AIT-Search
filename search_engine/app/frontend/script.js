@@ -558,9 +558,11 @@ async function handleAddDocument(e) {
         const data = await response.json();
         
         if (response.ok) {
+            console.log('Document added successfully:', data);
             showAddDocSuccess(data);
             addDocumentForm.reset();
         } else {
+            console.error('Error adding document:', data);
             showAddDocError(data.detail || 'Failed to add document');
         }
     } catch (error) {
@@ -577,17 +579,42 @@ function showAddDocSuccess(data) {
     resultDiv.className = 'add-doc-result';
     resultDiv.style.display = 'block';
     
+    // Handle different response structures
+    const docId = data.doc_id || data.document_id || 'Unknown';
+    const details = data.details || {};
+    const tokensCount = details.tokens_count || 'N/A';
+    const uniqueWords = details.unique_words || 'N/A';
+    const indexingTime = details.indexing_time || 'N/A';
+    const embeddingCreated = details.embedding_created !== undefined ? details.embedding_created : true;
+    
     resultDiv.innerHTML = `
         <h3>✅ Document Added Successfully!</h3>
-        <p><strong>Document ID:</strong> ${data.doc_id}</p>
-        <p><strong>Tokens:</strong> ${data.details.tokens_count} (${data.details.unique_words} unique)</p>
-        <p><strong>Indexing Time:</strong> ${data.details.indexing_time}</p>
-        <p><strong>Embedding:</strong> ${data.details.embedding_created ? 'Created' : 'Not created'}</p>
+        <p><strong>Document ID:</strong> ${docId}</p>
+        <p><strong>Tokens:</strong> ${tokensCount} (${uniqueWords} unique)</p>
+        <p><strong>Indexing Time:</strong> ${indexingTime}</p>
+        <p><strong>Embedding:</strong> ${embeddingCreated ? 'Created' : 'Not created'}</p>
         <p style="margin-top: 15px; font-style: italic;">Your document is now searchable!</p>
+        <p style="margin-top: 10px; color: #666;">Redirecting to search page...</p>
     `;
     
     // Scroll to result
     resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    // Redirect back to search page after 2 seconds
+    setTimeout(() => {
+        // Switch back to keyword search tab
+        tabs.forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.dataset.type === 'keyword') {
+                tab.classList.add('active');
+            }
+        });
+        currentSearchType = 'keyword';
+        
+        // Hide add document section and show search
+        hideAddDocumentSection();
+        updatePlaceholder();
+    }, 2000);
 }
 
 // Show Add Document Error

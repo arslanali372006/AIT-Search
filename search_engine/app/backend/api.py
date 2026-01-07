@@ -272,7 +272,7 @@ async def add_document(request: AddDocumentRequest):
     Add a new document to the search engine.
     Automatically indexes the document and makes it searchable.
     """
-    from document_indexer import document_indexer
+    from document_indexer import document_indexer  # type: ignore
     import numpy as np
     from pathlib import Path
     
@@ -295,13 +295,13 @@ async def add_document(request: AddDocumentRequest):
             # CRITICAL: Load the new embedding into memory immediately
             if result["embedding_created"]:
                 doc_id = result["doc_id"]
-                embeddings_dir = Path(__file__).parent.parent.parent / "index" / "embeddings"
+                embeddings_dir = Path(__file__).parent.parent.parent / "data" / "embeddings"
                 embedding_path = embeddings_dir / f"{doc_id}.npy"
                 
                 if embedding_path.exists():
                     new_embedding = np.load(str(embedding_path))
-                    # Add to in-memory embeddings
-                    search_engine.embeddings[doc_id] = new_embedding
+                    # Add to in-memory embeddings cache
+                    search_engine.embeddings_cache[doc_id] = new_embedding
                     print(f"✅ Added {doc_id} to in-memory embeddings")
             
             return {
